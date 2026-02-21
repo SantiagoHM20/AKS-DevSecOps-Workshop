@@ -1,0 +1,9 @@
+com\github\demo\service\BookService.class
+com\github\demo\servlet\StatusServlet.class
+com\github\demo\model\Book.class
+com\github\demo\service\BookDatabaseImpl.class
+com\github\demo\servlet\BookServlet.class
+com\github\demo\DemoServer.class
+com\github\demo\service\BookServiceException.class
+com\github\demo\service\BookUtils.class
+com\github\demo\service\BookDatabase.class
