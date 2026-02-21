@@ -4,6 +4,7 @@ on:
       - main
     paths:
       - 'tools/deploy/module0/**'
+      - '.github/workflows/infra-deployment-workflow.yml'
   
   workflow_dispatch:
 env:
