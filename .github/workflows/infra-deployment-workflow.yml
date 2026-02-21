@@ -40,10 +40,7 @@ jobs:
         # parameters: tools/deploy/module0/azuredeploy.parameters.json
         failOnStdErr: false
 
-      # az feature register for Lab 1
-    - name: az feature register
-      run: |
-        az feature register --namespace "Microsoft.ContainerService" --name "EnableWorkloadIdentityPreview"
+      # az feature register no longer needed - EnableWorkloadIdentityPreview is now GA
 
       # Attach ACR to AKS
     - name: attach Azure Container Registry to AKS
