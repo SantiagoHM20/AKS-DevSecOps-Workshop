@@ -36,7 +36,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
   }
 }
 
-resource aks 'Microsoft.ContainerService/managedClusters@2022-09-02-preview' = {
+resource aks 'Microsoft.ContainerService/managedClusters@2023-05-01' = {
   name: clusterName
   location: location
   identity: {
