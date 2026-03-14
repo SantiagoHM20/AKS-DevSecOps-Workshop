@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import io.jsonwebtoken.Jwts;
@@ -32,6 +32,7 @@ public class HttpController {
 
     private static final String TRUSTED_REDIRECT_HOST = "localhost";
     private static final int TRUSTED_REDIRECT_PORT = 8080;
+  private static final String FIXED_RESET_LINK = "default-reset-link";
 
   @Autowired
   private EmployeeRepository employeeRepository;
@@ -93,17 +94,16 @@ public class HttpController {
   /*
    * fake method to simulate clicking on the link in the email
    */
-  private void fakeClickingLinkEmail(String resetLink) {
+  private void fakeClickingLinkEmail() {
     try {
       HttpHeaders httpHeaders = new HttpHeaders();
       HttpEntity<Void> httpEntity = new HttpEntity<>(httpHeaders);
-      String safeResetLink = resetLink == null ? "" : resetLink.replaceAll("[^a-zA-Z0-9_-]", "");
       String safeUrl = UriComponentsBuilder.newInstance()
           .scheme("http")
           .host(TRUSTED_REDIRECT_HOST)
           .port(TRUSTED_REDIRECT_PORT)
           .path("/PasswordReset/reset/reset-password/{resetLink}")
-          .buildAndExpand(safeResetLink)
+          .buildAndExpand(FIXED_RESET_LINK)
           .toUriString();
       new RestTemplate()
           .exchange(
@@ -118,6 +118,6 @@ public class HttpController {
 
   @GetMapping("/employees/redirect")
   public void fakeRedirect(String ignoredHost, String resetLink) {
-    fakeClickingLinkEmail(resetLink);
+    fakeClickingLinkEmail();
   }
 }
