@@ -1,38 +1,46 @@
 package com.vulnerable.vulnerableapp;
 
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwt;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-
-import io.jsonwebtoken.impl.TextCodec;
-
+import java.security.Key;
+import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 @RestController
 public class HttpController {
 
-  public static final String[] SECRETS = {
-      "victory", "business", "available", "shipping", "washington"
-  };
+    private static final Key JWT_SIGNING_KEY = buildJwtSigningKey();
 
-  public static final String JWT_SECRET = TextCodec.BASE64.encode(SECRETS[new Random().nextInt(SECRETS.length)]);
+    private static final String TRUSTED_REDIRECT_HOST = "localhost";
+    private static final int TRUSTED_REDIRECT_PORT = 8080;
 
   @Autowired
   private EmployeeRepository employeeRepository;
+
+  private static Key buildJwtSigningKey() {
+    byte[] generatedSecret = new byte[32];
+    new SecureRandom().nextBytes(generatedSecret);
+    return Keys.hmacShaKeyFor(generatedSecret);
+  }
 
   @GetMapping("/employees")
   public List<Employee> getAllEmployees() {
@@ -70,38 +78,46 @@ public class HttpController {
   @ResponseBody
   public String getSecretToken() {
     return Jwts.builder()
-        .setIssuer("test Corp")
-        .setAudience("testvuln.org")
-        .setIssuedAt(Calendar.getInstance().getTime())
-        .setExpiration(Date.from(Instant.now().plusSeconds(60)))
-        .setSubject("jak@test.com")
+      .issuer("test Corp")
+      .audience().add("testvuln.org").and()
+      .issuedAt(Date.from(Instant.now()))
+      .expiration(Date.from(Instant.now().plusSeconds(60)))
+      .subject("jak@test.com")
         .claim("username", "John")
         .claim("Email", "johndoe@test.com")
         .claim("Role", new String[] { "Manager", "Project Administrator" })
-        .signWith(SignatureAlgorithm.HS256, JWT_SECRET)
+      .signWith(JWT_SIGNING_KEY)
         .compact();
   }
 
   /*
    * fake method to simulate clicking on the link in the email
    */
-  private void fakeClickingLinkEmail(String host, String resetLink) {
+  private void fakeClickingLinkEmail(String resetLink) {
     try {
       HttpHeaders httpHeaders = new HttpHeaders();
-      HttpEntity httpEntity = new HttpEntity(httpHeaders);
+      HttpEntity<Void> httpEntity = new HttpEntity<>(httpHeaders);
+      String safeResetLink = resetLink == null ? "" : resetLink.replaceAll("[^a-zA-Z0-9_-]", "");
+      String safeUrl = UriComponentsBuilder.newInstance()
+          .scheme("http")
+          .host(TRUSTED_REDIRECT_HOST)
+          .port(TRUSTED_REDIRECT_PORT)
+          .path("/PasswordReset/reset/reset-password/{resetLink}")
+          .buildAndExpand(safeResetLink)
+          .toUriString();
       new RestTemplate()
           .exchange(
-              String.format("http://%s/PasswordReset/reset/reset-password/%s", host, resetLink),
+              safeUrl,
               HttpMethod.GET,
               httpEntity,
               Void.class);
-    } catch (Exception e) {
+    } catch (RestClientException e) {
 
     }
   }
 
   @GetMapping("/employees/redirect")
-  public void fakeRedirect(String host, String resetLink) {
-    fakeClickingLinkEmail(host, resetLink);
+  public void fakeRedirect(String ignoredHost, String resetLink) {
+    fakeClickingLinkEmail(resetLink);
   }
 }
